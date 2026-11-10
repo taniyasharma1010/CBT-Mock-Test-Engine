@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT Mock Test Engine - Project 4</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-slate-900 text-white p-4 shadow-md flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <h1 class="text-xl font-bold">CBT Mock Test Engine</h1>
+      <span class="text-xs bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-full text-slate-300">Project 4</span>
+    </div>
+    <div id="timerDisplay" class="bg-red-600 text-white px-4 py-1.5 rounded-lg font-mono font-bold text-sm shadow">
+      Time Left: 15:00
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-6 flex flex-col lg:flex-row gap-6">
+    
+    <!-- Test Screen Area -->
+    <section id="testScreen" class="flex-1 bg-white p-6 rounded-xl shadow flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center border-b pb-3 mb-4">
+          <span id="questionCategory" class="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded">Physics</span>
+          <span id="questionCounter" class="text-sm font-semibold text-slate-500">Q 1 of 15</span>
+        </div>
+
+        <h2 id="questionText" class="text-lg font-bold text-slate-900 mb-6">Loading question...</h2>
+
+        <!-- Options Container -->
+        <div id="optionsContainer" class="flex flex-col gap-3">
+          <!-- Dynamically populated options -->
+        </div>
+      </div>
+
+      <!-- Navigation & Action Buttons -->
+      <div class="border-t pt-4 mt-6 flex flex-wrap justify-between items-center gap-3">
+        <div class="flex gap-2">
+          <button id="markReviewBtn" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-4 py-2 rounded-lg text-sm font-semibold transition">
+            Mark for Review
+          </button>
+          <button id="clearBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border px-4 py-2 rounded-lg text-sm font-semibold transition">
+            Clear Response
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <button id="prevBtn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+            Previous
+          </button>
+          <button id="nextBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow transition">
+            Save & Next
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sidebar: Question Palette & File Upload -->
+    <aside class="w-full lg:w-80 bg-white p-5 rounded-xl shadow flex flex-col gap-5">
+      
+      <!-- Load Question File -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-2">Load Custom Questions (.json)</label>
+        <input type="file" id="questionFileInput" accept=".json" class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+      </div>
+
+      <!-- Palette Legend -->
+      <div class="border-t pt-4">
+        <h3 class="text-xs font-bold text-slate-700 mb-2">Question Palette</h3>
+        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 mb-4">
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emerald-500 rounded-sm inline-block"></span> Answered</div>
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-slate-200 rounded-sm inline-block"></span> Not Visited</div>
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-amber-500 rounded-sm inline-block"></span> Marked Review</div>
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-500 rounded-sm inline-block"></span> Unanswered</div>
+        </div>
+
+        <!-- Palette Grid -->
+        <div id="paletteGrid" class="grid grid-cols-5 gap-2">
+          <!-- Dynamically generated buttons -->
+        </div>
+      </div>
+
+      <!-- Submit Test Button -->
+      <div class="border-t pt-4 mt-auto">
+        <button id="submitTestBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition">
+          Submit Test
+        </button>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Result Modal Screen (Hidden by Default) -->
+  <div id="resultModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4">
+      <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">Test Summary & Results</h2>
+      <div id="resultStats" class="grid grid-cols-2 gap-4 text-sm text-slate-700">
+        <!-- Result stats filled dynamically -->
+      </div>
+      <button onclick="location.reload()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg shadow">
+        Retake Test
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Default Sample Questions (Can be replaced by uploaded JSON file)
+    let questions = [
+      { id: 1, subject: "Physics", question: "What is the SI unit of electric charge?", options: ["Volt", "Coulomb", "Ohm", "Tesla"], answer: 1 },
+      { id: 2, subject: "Physics", question: "Which law states that V = IR?", options: ["Ohm's Law", "Faraday's Law", "Newton's First Law", "Coulomb's Law"], answer: 0 },
+      { id: 3, subject: "Physics", question: "What is the acceleration due to gravity on Earth approximately?", options: ["8.9 m/s²", "9.8 m/s²", "10.5 m/s²", "11.2 m/s²"], answer: 1 },
+      { id: 4, subject: "Physics", question: "Unit of magnetic flux is:", options: ["Weber", "Tesla", "Henry", "Farad"], answer: 0 },
+      { id: 5, subject: "Physics", question: "Light year is a unit of:", options: ["Time", "Distance", "Speed", "Intensity"], answer: 1 }
+    ];
+
+    let currentIndex = 0;
+    let userAnswers = {}; // stores selected option index per question ID
+    let questionStatus = {}; // 'visited', 'answered', 'marked'
+    let timeLeft = 900; // 15 minutes in seconds
+
+    // Load state from localStorage if available (ensures refresh mid-test loses nothing)
+    if (localStorage.getItem('cbt_userAnswers')) {
+      userAnswers = JSON.parse(localStorage.getItem('cbt_userAnswers'));
+      questionStatus = JSON.parse(localStorage.getItem('cbt_questionStatus'));
+      timeLeft = parseInt(localStorage.getItem('cbt_timeLeft')) || 900;
+    } else {
+      questions.forEach((q, idx) => {
+        questionStatus[idx] = 'unvisited';
+      });
+    }
+
+    // Timer logic with auto-submit
+    const timerInterval = setInterval(() => {
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        submitTest();
+        return;
+      }
+      timeLeft--;
+      localStorage.setItem('cbt_timeLeft', timeLeft);
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      document.getElementById('timerDisplay').textContent = `Time Left: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+
+    // Render current question
+    function renderQuestion() {
+      const q = questions[currentIndex];
+      document.getElementById('questionCategory').textContent = q.subject;
+      document.getElementById('questionCounter').textContent = `Q ${currentIndex + 1} of ${questions.length}`;
+      document.getElementById('questionText').textContent = q.question;
+
+      if (questionStatus[currentIndex] === 'unvisited') {
+        questionStatus[currentIndex] = 'unanswered';
+      }
+
+      const optionsContainer = document.getElementById('optionsContainer');
+      optionsContainer.innerHTML = '';
+
+      q.options.forEach((opt, idx) => {
+        const isSelected = userAnswers[currentIndex] === idx;
+        const btn = document.createElement('button');
+        btn.className = `w-full text-left p-3.5 rounded-xl border text-sm font-medium transition flex items-center gap-3 ${isSelected ? 'bg-blue-50 border-blue-500 text-blue-900 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'}`;
+        btn.innerHTML = `<span class="w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold ${isSelected ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-300 text-slate-500'}">${String.fromCharCode(65 + idx)}</span> ${opt}`;
+        btn.onclick = () => {
+          userAnswers[currentIndex] = idx;
+          questionStatus[currentIndex] = 'answered';
+          saveState();
+          renderQuestion();
+          renderPalette();
+        };
+        optionsContainer.appendChild(btn);
+      });
+
+      renderPalette();
+    }
+
+    // Render question palette
+    function renderPalette() {
+      const paletteGrid = document.getElementById('paletteGrid');
+      paletteGrid.innerHTML = '';
+
+      questions.forEach((q, idx) => {
+        const status = questionStatus[idx];
+        let colorClass = 'bg-slate-100 text-slate-700 border-slate-200'; // unvisited
+        if (status === 'answered') colorClass = 'bg-emerald-500 text-white border-emerald-600';
+        else if (status === 'marked') colorClass = 'bg-amber-500 text-white border-amber-600';
+        else if (status === 'unanswered') colorClass = 'bg-red-500 text-white border-red-600';
+
+        if (currentIndex === idx) colorClass += ' ring-2 ring-offset-2 ring-blue-600';
+
+        const btn = document.createElement('button');
+        btn.className = `h-9 rounded-lg font-bold text-xs border flex items-center justify-center transition ${colorClass}`;
+        btn.textContent = idx + 1;
+        btn.onclick = () => {
+          currentIndex = idx;
+          renderQuestion();
+        };
+        paletteGrid.appendChild(btn);
+      });
+    }
+
+    function saveState() {
+      localStorage.setItem('cbt_userAnswers', JSON.stringify(userAnswers));
+      localStorage.setItem('cbt_questionStatus', JSON.stringify(questionStatus));
+    }
+
+    // Navigation triggers
+    document.getElementById('nextBtn').onclick = () => {
+      if (currentIndex < questions.length - 1) {
+        currentIndex++;
+        renderQuestion();
+      }
+    };
+
+    document.getElementById('prevBtn').onclick = () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderQuestion();
+      }
+    };
+
+    document.getElementById('clearBtn').onclick = () => {
+      delete userAnswers[currentIndex];
+      questionStatus[currentIndex] = 'unanswered';
+      saveState();
+      renderQuestion();
+    };
+
+    document.getElementById('markReviewBtn').onclick = () => {
+      questionStatus[currentIndex] = 'marked';
+      saveState();
+      renderQuestion();
+    };
+
+    // Load custom questions from JSON file (ensures a second question file works with no code change)
+    document.getElementById('questionFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const loaded = JSON.parse(event.target.result);
+          if (Array.isArray(loaded) && loaded.length > 0) {
+            questions = loaded;
+            currentIndex = 0;
+            userAnswers = {};
+            questionStatus = {};
+            questions.forEach((q, idx) => { questionStatus[idx] = 'unvisited'; });
+            localStorage.clear();
+            renderQuestion();
+            alert('New question file loaded successfully!');[cite, 7]
+          }
+        } catch (err) {
+          alert('Invalid JSON question file format.');
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Submit Test & Calculate Results
+    function submitTest() {
+      clearInterval(timerInterval);
+      localStorage.clear();
+
+      let correct = 0;
+      let incorrect = 0;
+      let unattempted = 0;
+
+      questions.forEach((q, idx) => {
+        if (userAnswers[idx] === undefined) {
+          unattempted++;
+        } else if (userAnswers[idx] === q.answer) {
+          correct++;
+        } else {
+          incorrect++;
+        }
+      });
+
+      // Positive (+4) and Negative (-1) marking scheme
+      const score = (correct * 4) - (incorrect * 1);
+      const totalMarks = questions.length * 4;
+      const accuracy = correct + incorrect > 0 ? ((correct / (correct + incorrect)) * 100).toFixed(1) : 0;
+
+      document.getElementById('resultStats').innerHTML = `
+        <p><strong>Total Questions:</strong> ${questions.length}</p>
+        <p><strong>Correct:</strong> <span class="text-emerald-600 font-bold">${correct}</span></p>
+        <p><strong>Incorrect:</strong> <span class="text-red-600 font-bold">${incorrect}</span></p>
+        <p><strong>Unattempted:</strong> ${unattempted}</p>
+        <p><strong>Accuracy:</strong> ${accuracy}%</p>
+        <p><strong>Final Score:</strong> <span class="text-blue-600 font-bold">${score} / ${totalMarks}</span></p>
+      `;
+
+      document.getElementById('resultModal').classList.remove('hidden');
+    }
+
+    document.getElementById('submitTestBtn').onclick = submitTest;
+
+    // Initial load
+    renderQuestion();
+  </script>
+</body>
+</html>
